@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>לוח אירועים</title>
+<link rel="manifest" href="/manifest.json" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, system-ui, sans-serif;
+    background: #f5f5f7;
+    margin: 0;
+    padding: 16px;
+    color: #1d1d1f;
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .subtitle { color: #666; font-size: 13px; margin-bottom: 20px; }
+  button#syncBtn {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    background: #007aff;
+    color: white;
+    margin-bottom: 20px;
+  }
+  button#syncBtn:disabled { background: #999; }
+  .event {
+    background: white;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .event .date { font-size: 13px; color: #007aff; font-weight: 600; }
+  .event .title { font-size: 16px; margin-top: 2px; }
+  .event .meta { font-size: 12px; color: #888; margin-top: 4px; }
+  .empty { text-align: center; color: #888; margin-top: 40px; }
+  #status { font-size: 13px; color: #888; text-align: center; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+  <h1>לוח אירועים</h1>
+  <div class="subtitle">בנות: בית ספר + גן</div>
+  <button id="syncBtn" onclick="doSync()">🔄 סנכרן עכשיו</button>
+  <div id="status"></div>
+  <div id="events"></div>
+
+  <script>
+    const API_TOKEN = localStorage.getItem('sync_token') || prompt('הזן sync token:');
+    if (API_TOKEN) localStorage.setItem('sync_token', API_TOKEN);
+
+    async function loadEvents() {
+      const res = await fetch('/events');
+      const data = await res.json();
+      const container = document.getElementById('events');
+      const status = document.getElementById('status');
+
+      status.textContent = data.lastSync
+        ? `סנכרון אחרון: ${new Date(data.lastSync.ran_at).toLocaleString('he-IL')}`
+        : 'עדיין לא בוצע סנכרון';
+
+      if (!data.events.length) {
+        container.innerHTML = '<div class="empty">אין אירועים עדיין</div>';
+        return;
+      }
+
+      container.innerHTML = data.events.map(e => `
+        <div class="event">
+          <div class="date">${e.date || 'תאריך לא ידוע'}${e.time ? ' · ' + e.time : ''}</div>
+          <div class="title">${e.title}</div>
+          ${e.location ? `<div class="meta">📍 ${e.location}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    async function doSync() {
+      const btn = document.getElementById('syncBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ מסנכרן...';
+      try {
+        const res = await fetch('/sync', {
+          method: 'POST',
+          headers: { 'x-sync-token': API_TOKEN }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'שגיאה');
+        await loadEvents();
+      } catch (err) {
+        alert('שגיאה בסנכרון: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔄 סנכרן עכשיו';
+      }
+    }
+
+    loadEvents();
+  </script>
+</body>
+</html>
