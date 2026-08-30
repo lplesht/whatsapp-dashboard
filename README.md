@@ -1,81 +1,81 @@
-# לוח אירועים מוואטסאפ
+# WhatsApp Event Dashboard
 
-מערכת שמחלצת אירועים (ימי הולדת, מסיבות, טיולים) מקבוצות וואטסאפ נבחרות ומציגה אותם בדאשבורד. סנכרון על פי דרישה — לוחצים כפתור, לא מאזין ברקע.
+A system that extracts events (birthdays, parties, trips) from selected WhatsApp groups and displays them on a dashboard. Sync is on-demand — you tap a button, nothing listens in the background.
 
-## מבנה הפרויקט
+## Project structure
 
 ```
-src/config.js        ← whitelist של קבוצות + מילות מפתח (ערוך פה!)
-src/baileys-client.js ← חיבור וואטסאפ + סינון whitelist
-src/extractor.js      ← קריאה ל-Claude API לחילוץ אירועים
-src/db.js             ← מסד נתונים SQLite
-src/server.js         ← שרת Express (/sync, /events)
-public/index.html     ← הדאשבורד (PWA)
-public/qr.html         ← דף לסריקת קוד ה-QR
+src/config.js          ← whitelist of groups + keywords (edit this!)
+src/baileys-client.js  ← WhatsApp connection + whitelist filtering
+src/extractor.js       ← calls the Claude API to extract events
+src/db.js              ← SQLite database
+src/server.js          ← Express server (/sync, /events)
+public/index.html      ← the dashboard (PWA)
+public/qr.html          ← page for scanning the QR code
 ```
 
-## שלב 1: הקמת חשבון GitHub ו-repo
+## Step 1: Set up GitHub and a repo
 
-1. באתר github.com (אפשר מהאייפון), צור repo פרטי חדש בשם `whatsapp-dashboard`
-2. העלה את כל התיקייה הזו אליו (git push) — או פשוט גרור את הקבצים דרך ממשק ה-web של GitHub אם אתה עובד מהנייד בלי טרמינל
+1. On github.com (works fine from an iPhone), create a new **private** repo called `whatsapp-dashboard`
+2. Push this whole folder to it — or, if you're on mobile without a terminal, just drag the files in through GitHub's web UI ("Add file → Upload files")
 
-## שלב 2: הקמת ה-VPS
+## Step 2: Set up the VPS
 
-1. הרשמה ל-Hetzner Cloud או DigitalOcean (דרך הדפדפן)
-2. יצירת שרת Ubuntu 24.04 קטן (cx22 / droplet בסיסי, ~$5/חודש)
-3. הוספת מפתח SSH (אם עובדים מהאייפון — אפליקציית **Termius** יכולה גם ליצור מפתח וגם להתחבר)
+1. Sign up for Hetzner Cloud or DigitalOcean (via browser)
+2. Create a small Ubuntu 24.04 server (Hetzner cx22 / a basic droplet, ~$5/month)
+3. Add an SSH key (if working from an iPhone — **Termius** can generate a key and connect to the server)
 
-## שלב 3: התחברות לשרת והתקנה
+## Step 3: Connect to the server and install
 
-דרך אפליקציית SSH (Termius מומלץ לאייפון):
+Via an SSH app (Termius recommended for iPhone):
 
 ```bash
-# התקנת Node.js ו-git
+# Install Node.js and git
 curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 apt install -y nodejs git
 
-# שכפול הקוד מ-GitHub
+# Clone the code from GitHub
 git clone https://github.com/USERNAME/whatsapp-dashboard.git
 cd whatsapp-dashboard
 npm install
 
-# הגדרת משתני סביבה
+# Set up environment variables
 cp .env.example .env
-nano .env   # למלא ANTHROPIC_API_KEY ו-SYNC_TOKEN
+nano .env   # fill in ANTHROPIC_API_KEY and SYNC_TOKEN
 ```
 
-## שלב 4: הגדרת ה-whitelist
+## Step 4: Set up the whitelist
 
-ערוך את `src/config.js` והוסף את מזהי הקבוצות הרלוונטיים ל-`ALLOWED_GROUPS`. בסבב הראשון הרשימה ריקה בכוונה — תריץ את השרת, שלח הודעת בדיקה בקבוצה, וה-console ידפיס את מזהה הקבוצה כדי שתוכל להעתיק אותו.
+Edit `src/config.js` and add the relevant group IDs to `ALLOWED_GROUPS`. The list starts empty on purpose — run the server, send a test message in the group, and the console will print that group's ID so you can copy it in.
 
-## שלב 5: הרצה ראשונית + סריקת QR
+## Step 5: First run + QR scan
 
 ```bash
 npm run start
 ```
 
-בפעם הראשונה תופיע הודעה שקוד QR נכתב. פתח בדפדפן (מכל מכשיר):
+On first run you'll see a message that a QR code was written. Open in a browser (from any device):
 ```
-http://<כתובת-השרת>:3000/qr
+http://<server-address>:3000/qr
 ```
-וסרוק עם וואטסאפ ← הגדרות ← מכשירים מקושרים ← קישור מכשיר.
+and scan it with WhatsApp → Settings → Linked Devices → Link a Device.
 
-## שלב 6: הרצה קבועה עם pm2
+## Step 6: Keep it running with pm2
 
 ```bash
 npm install -g pm2
 pm2 start src/server.js --name whatsapp-dashboard
 pm2 save
-pm2 startup   # מבטיח שהשרת יעלה מחדש אחרי איתחול
+pm2 startup   # ensures the server restarts after a reboot
 ```
 
-## שלב 7: גישה מהאייפון
+## Step 7: Access from your iPhone
 
-פתח בספארי: `http://<כתובת-השרת>:3000` → שתף → הוסף למסך הבית (הופך ל-PWA שנראה כמו אפליקציה).
+Open in Safari: `http://<server-address>:3000` → Share → Add to Home Screen (turns it into a PWA that looks like an app).
 
-בכניסה הראשונה תתבקש להזין את ה-`SYNC_TOKEN` שהגדרת ב-`.env` (נשמר מקומית בטלפון).
+On first load you'll be asked to enter the `SYNC_TOKEN` you set in `.env` (it's saved locally on the phone).
 
-## הערות אבטחה
-- לא נשמר טקסט הודעה גולמי במסד הנתונים — רק האירוע המחולץ
-- ה-endpoint של `/sync` דורש טוקן סודי (`x-sync-token`) — בלעדיו אף אחד לא יכול להפעיל סנכרון
-- מומלץ מאוד להוסיף HTTPS (nginx/Caddy + Let's Encrypt) לפני שימוש קבוע, כדי שהטוקן לא יעבור בטקסט גלוי
+## Security notes
+- Raw message text is never stored in the database — only the extracted event
+- The `/sync` endpoint requires a secret token (`x-sync-token`) — without it, no one can trigger a sync
+- Strongly recommended: add HTTPS (nginx/Caddy + Let's Encrypt) before regular use, so the token doesn't travel in plain text
