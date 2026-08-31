@@ -68,6 +68,10 @@ async function runSync(onMessage) {
       }
     });
 
+    // Tracks unlisted group IDs already logged this sync run, so a busy
+    // group doesn't spam the console once per message.
+    const loggedUnlistedGroups = new Set();
+
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
       if (type !== 'notify' && type !== 'append') return;
 
@@ -77,6 +81,10 @@ async function runSync(onMessage) {
 
           // --- WHITELIST GATE — first check, nothing else runs before it ---
           if (!ALLOWED_GROUPS.includes(groupId)) {
+            if (groupId?.endsWith('@g.us') && !loggedUnlistedGroups.has(groupId)) {
+              loggedUnlistedGroups.add(groupId);
+              console.log(`Unlisted group seen: ${groupId}`);
+            }
             continue; // dropped immediately, never touches anything else
           }
 

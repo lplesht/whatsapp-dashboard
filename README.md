@@ -69,13 +69,25 @@ pm2 save
 pm2 startup   # ensures the server restarts after a reboot
 ```
 
-## Step 7: Access from your iPhone
+## Step 7: Add HTTPS (strongly recommended)
 
-Open in Safari: `http://<server-address>:3000` → Share → Add to Home Screen (turns it into a PWA that looks like an app).
+The `SYNC_TOKEN` travels as a plain header — without HTTPS it's visible to
+anyone on the network path. `deploy/Caddyfile` sets up a reverse proxy with
+automatic Let's Encrypt certificates; see the comments in that file for the
+install command and a `nip.io` option if you don't have a domain yet.
+
+Once it's running, use the HTTPS URL (e.g. `https://your-domain.example.com`)
+in place of `http://<server-address>:3000` for the rest of this guide.
+
+## Step 8: Access from your iPhone
+
+Open in Safari: your server's URL (HTTPS if you did Step 7, otherwise
+`http://<server-address>:3000`) → Share → Add to Home Screen (turns it into
+a PWA that looks like an app).
 
 On first load you'll be asked to enter the `SYNC_TOKEN` you set in `.env` (it's saved locally on the phone).
 
 ## Security notes
 - Raw message text is never stored in the database — only the extracted event
 - The `/sync` endpoint requires a secret token (`x-sync-token`) — without it, no one can trigger a sync
-- Strongly recommended: add HTTPS (nginx/Caddy + Let's Encrypt) before regular use, so the token doesn't travel in plain text
+- Strongly recommended: add HTTPS (Step 7) before regular use, so the token doesn't travel in plain text

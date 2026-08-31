@@ -1,0 +1,23 @@
+# Reverse-proxies HTTPS traffic to the WhatsApp dashboard running on
+# localhost:3000, so the sync token doesn't travel in plaintext.
+#
+# Replace `your-domain.example.com` below with a real domain pointed at
+# this server's IP. No domain? Use a nip.io address instead, e.g.
+# whatsapp-203-0-113-1.nip.io for a server at 203.0.113.1 — no DNS setup
+# needed, it just resolves to the IP embedded in the name.
+#
+# Install + apply:
+#   sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+#   curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+#   curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+#   sudo apt update && sudo apt install -y caddy
+#   sudo cp deploy/Caddyfile /etc/caddy/Caddyfile
+#   sudo systemctl reload caddy
+#
+# Caddy automatically provisions and renews a Let's Encrypt certificate —
+# no manual cert management. Make sure ports 80 and 443 are open in the
+# VPS provider's firewall (Caddy needs 80 for the ACME challenge).
+
+your-domain.example.com {
+	reverse_proxy localhost:3000
+}
