@@ -60,6 +60,12 @@ http://<server-address>:3000/qr
 ```
 and scan it with WhatsApp → Settings → Linked Devices → Link a Device.
 
+**No second device to scan with?** Set `LINK_PHONE_NUMBER` in `.env` to your
+number (digits only, country code included, e.g. `972501234567`), restart
+the app, and trigger a sync — instead of a QR, the console prints an
+8-character pairing code. In WhatsApp, go to Linked Devices → Link a Device
+→ "Link with phone number instead" and type that code in.
+
 ## Step 6: Keep it running with pm2
 
 ```bash

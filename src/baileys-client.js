@@ -8,7 +8,7 @@ const qrcode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
 const pino = require('pino');
-const { ALLOWED_GROUPS, EVENT_KEYWORDS, SESSION_PATH } = require('./config');
+const { ALLOWED_GROUPS, EVENT_KEYWORDS, SESSION_PATH, LINK_PHONE_NUMBER } = require('./config');
 
 const logger = pino({ level: 'warn' });
 
@@ -67,6 +67,20 @@ async function runSync(onMessage) {
         }
       }
     });
+
+    if (LINK_PHONE_NUMBER && !sock.authState.creds.registered) {
+      const phone = LINK_PHONE_NUMBER.replace(/[^0-9]/g, '');
+      sock
+        .requestPairingCode(phone)
+        .then((code) => {
+          console.log(
+            `Pairing code: ${code} — in WhatsApp, choose "Link with phone number instead" and enter this code.`
+          );
+        })
+        .catch((err) => {
+          console.error('Failed to request pairing code:', err.message);
+        });
+    }
 
     // Tracks unlisted group IDs already logged this sync run, so a busy
     // group doesn't spam the console once per message.
