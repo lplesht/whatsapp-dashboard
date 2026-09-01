@@ -32,4 +32,9 @@ module.exports = {
   // Simple shared-secret auth for the /sync endpoint so random
   // internet traffic can't trigger a WhatsApp sync.
   SYNC_TOKEN: process.env.SYNC_TOKEN || 'change-me',
+  // Optional: if set, first-time linking requests an 8-character
+  // pairing code (printed to the console) instead of a QR image —
+  // useful when there's no second device to scan a QR with.
+  // Digits only, country code included, e.g. 972501234567.
+  LINK_PHONE_NUMBER: process.env.LINK_PHONE_NUMBER || '',
 };
