@@ -97,3 +97,48 @@ On first load you'll be asked to enter the `SYNC_TOKEN` you set in `.env` (it's 
 - Raw message text is never stored in the database — only the extracted event
 - The `/sync` endpoint requires a secret token (`x-sync-token`) — without it, no one can trigger a sync
 - Strongly recommended: add HTTPS (Step 7) before regular use, so the token doesn't travel in plain text
+
+## Future direction: a full family dashboard
+
+The longer-term goal for this project is broader than WhatsApp — a single
+dashboard aggregating multiple sources per family member (WhatsApp, Gmail,
+possibly bank accounts; medical portals like כללית/מכבי are deliberately
+out of scope for now — no public API found, and higher privacy stakes than
+the rest). Notes from that research, for when this gets picked back up:
+
+**Per-source feasibility**
+- **Gmail** — easy, official OAuth2 API, low risk. Natural next connector.
+- **Bank accounts** — no accessible official API yet (Israel's Open Banking
+  standard targets licensed fintechs, not hobby projects). The practical
+  route is the open-source [`israeli-bank-scrapers`](https://github.com/eshaham/israeli-bank-scrapers)
+  (headless-browser login with real credentials) — works, but unofficial
+  and requires careful credential handling.
+- **כללית/מכבי** — no public API found; not planned for now.
+
+**Preferred architecture — Raspberry Pi as the credential vault**
+
+Rather than running credentialed connectors (bank, etc.) on a
+public-facing cloud server, run them on a Raspberry Pi at home instead:
+
+- The Pi only ever makes *outbound* calls (to each service, and to the
+  Claude API to normalize scraped data into structured records) — it never
+  needs to accept inbound connections, so there's nothing to expose to the
+  internet. Meaningfully smaller attack surface than a VPS for anything
+  credential-heavy.
+- A daily `cron` job runs each connector (Gmail, bank, and possibly
+  WhatsApp too), then only the already-structured, sanitized output
+  — never raw credentials or raw messages — leaves the Pi.
+- Needs real RAM if bank scraping is involved (`israeli-bank-scrapers`
+  runs headless Chromium under the hood) — a Pi 4 (4GB) or Pi 5, not a
+  Pi Zero.
+
+Two options for where the dashboard itself then lives:
+- **Option A**: keep this VPS as the display layer — the Pi pushes
+  structured records to a new authenticated endpoint here, same pattern
+  as `/sync` today.
+- **Option B (leaning this way)**: retire the VPS entirely, host the
+  dashboard on the Pi itself, and have family members reach it over
+  [Tailscale](https://tailscale.com/) (a free private mesh VPN) instead
+  of a public IP/domain — no public exposure at all, no HTTPS/Caddy/domain
+  setup needed, and no monthly VPS cost. Trade-off: dashboard uptime is
+  then tied to home power/internet.
